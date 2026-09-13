@@ -1,4 +1,5 @@
 'use client';
+import './mobile-flow.css';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import Image from 'next/image';
@@ -12,7 +13,7 @@ import NutritionPanel from './nutrition-panel';
 import WorkoutPanel, { type WorkoutDraft } from './workout-panel';
 import { recommend, searchExercises, type Candidate, type Exercise, type Stretch } from '@/lib/recovery';
 
-type Stage = 'find'|'method'|'recommend'|'detail';
+type Stage = 'find'|'method'|'record'|'recommend'|'detail'|'history'|'nutrition';
 type Zoom = {src:string;caption:string}|null;
 
 function Photo({src,alt,className='',onZoom}:{src?:string;alt:string;className?:string;onZoom?:(image:NonNullable<Zoom>)=>void}) {
@@ -38,6 +39,7 @@ export default function RecoveryApp() {
  const [shown,setShown]=useState(12);
  const [selected,setSelected]=useState<Exercise|null>(null);
  const [stage,setStage]=useState<Stage>('find');
+ const [recordRevision,setRecordRevision]=useState(0);
  const [available,setAvailable]=useState<string[]>([]);
  const [limit,setLimit]=useState(3);
  const [active,setActive]=useState<Candidate|null>(null);
@@ -55,7 +57,7 @@ export default function RecoveryApp() {
    .catch(e=>{if(e.name!=='AbortError'){setError(true);setLoading(false);}});
   return ()=>controller.abort();
  },[retry]);
- useEffect(()=>{if(stage!=='find'){heading.current?.focus({preventScroll:true});window.scrollTo({top:0,behavior:'instant'});}},[stage]);
+ useEffect(()=>{window.scrollTo({top:0,behavior:'instant'});const target=stage==='record'||stage==='history'?document.getElementById('workout-title'):stage==='nutrition'?document.getElementById('nutrition-title'):heading.current;target?.focus({preventScroll:true});},[stage]);
  const results=useMemo(()=>searchExercises(exercises,query),[exercises,query]);
  const recommendations=useMemo(()=>recommend(selected,stretches,available,limit),[selected,stretches,available,limit]);
  const requirementOptions=useMemo(()=>{
@@ -66,18 +68,18 @@ export default function RecoveryApp() {
  const activeExercise=active?exercises.find(e=>e.id===active.stretch.exerciseId):null;
  function updateQuery(value:string){setQuery(value);setShown(12);}
  function chooseExercise(exercise:Exercise){setSelected(exercise);setActive(null);setStage('method');}
- function addSelected(){if(!selected)return;setDrafts(all=>all.some(d=>d.exerciseId===selected.id)?all:[...all,{id:crypto.randomUUID(),exerciseId:selected.id,exercise:selected.nameKo,reps:'',stretched:false}]);}
+ function addSelected(){if(!selected)return;setDrafts(all=>all.some(d=>d.exerciseId===selected.id)?all:[...all,{id:crypto.randomUUID(),exerciseId:selected.id,exercise:selected.nameKo,reps:'',stretched:false}]);setStage('record');}
  function toFind(){setStage('find');setActive(null);setTimeout(()=>searchInput.current?.focus(),0);}
  function chooseStretch(candidate:Candidate){setActive(candidate);setStage('detail');}
- const stages:[Stage,string][]=[['find','운동 찾기'],['method','운동 방법'],['recommend','스트레칭 선택'],['detail','따라 하기']];
+ const stages:[Stage,string][]=[['find','운동 선택'],['method','방법 확인'],['record','기록 입력'],['recommend','스트레칭'],['detail','따라 하기']];
 
  return <>
   <a className="skip-link" href="#main">본문으로 바로가기</a>
   <header className="app-header"><button className="brand" onClick={toFind} aria-label="리커버리 운동 찾기로 이동"><span className="brand-icon"><Activity aria-hidden="true"/></span>리커버리<span className="brand-en">RECOVERY</span></button><button className="help-button" onClick={()=>setHelp(true)}><CircleHelp size={19} aria-hidden="true"/><span>이용 안내</span></button></header>
   <main id="main" className="app-shell">
-   <div className="record-links"><a className="nutrition-jump" href="#workout-log">운동 기록{drafts.length>0&&` · 선택 ${drafts.length}개`} ↓</a><a className="nutrition-jump" href="#nutrition">식사 기록 · 영양 요약 ↓</a></div>
-   <nav aria-label="진행 단계"><ol className="stepper">{stages.map(([key,label],i)=><li key={key} className={stage===key?'active':''} aria-current={stage===key?'step':undefined}><span className="step-number">{String(i+1).padStart(2,'0')}</span><span>{label}</span>{i<stages.length-1&&<ChevronRight className="step-chevron" size={15} aria-hidden="true"/>}</li>)}</ol></nav>
-   {loading?<section aria-busy="true" aria-label="운동 데이터 불러오는 중"><div className="intro"><h1>운동 정보를 준비하고 있어요</h1></div><div className="exercise-grid">{[0,1,2,3].map(i=><Skeleton key={i} className="h-64 rounded-2xl"/>)}</div></section>:error?<section role="alert" className="empty-state"><Info size={30}/><h1>운동 정보를 불러오지 못했어요</h1><p>인터넷 연결을 확인하고 다시 시도해 주세요.</p><Button className="action-button" onClick={()=>{setLoading(true);setError(false);setRetry(r=>r+1);}}>다시 불러오기</Button></section>:<>
+   {!['history','nutrition'].includes(stage)&&<nav className="flow-progress" aria-label="진행 단계"><span>{stages.findIndex(([key])=>key===stage)+1} / {stages.length}</span><strong>{stages.find(([key])=>key===stage)?.[1]}</strong><div className="flow-dots" aria-hidden="true">{stages.map(([key],i)=><span key={key} className={i<=stages.findIndex(([k])=>k===stage)?'done':''}/>)}</div></nav>}
+
+   {!['record','history','nutrition'].includes(stage)&&(loading?<section aria-busy="true" aria-label="운동 데이터 불러오는 중"><div className="intro"><h1>운동 정보를 준비하고 있어요</h1></div><div className="exercise-grid">{[0,1,2,3].map(i=><Skeleton key={i} className="h-64 rounded-2xl"/>)}</div></section>:error?<section role="alert" className="empty-state"><Info size={30}/><h1>운동 정보를 불러오지 못했어요</h1><p>인터넷 연결을 확인하고 다시 시도해 주세요.</p><Button className="action-button" onClick={()=>{setLoading(true);setError(false);setRetry(r=>r+1);}}>다시 불러오기</Button></section>:<>
    {stage==='find'&&<>
     <div className="intro"><p className="eyebrow">나의 운동 후 스트레칭</p><h1 ref={heading} tabIndex={-1}>오늘 어떤 운동을 하셨나요?</h1><p>운동을 눌러 방법을 확인하고, 기록할 운동을 선택하세요.</p></div>
     <search><form onSubmit={e=>{e.preventDefault();setShown(12);}}><label className="search-box"><Search size={24} aria-hidden="true"/><span className="sr-only">운동 이름 검색</span><input ref={searchInput} type="search" autoComplete="off" value={query} onChange={e=>updateQuery(e.target.value)} placeholder="운동 이름 검색 · 예: 스쿼트, 벤치프레스" aria-describedby="search-hint"/></label></form></search>
@@ -86,7 +88,7 @@ export default function RecoveryApp() {
      {results.items.length?<div className="exercise-grid">{results.items.slice(0,shown).map(e=><button className={`exercise-card ${selected?.id===e.id?'is-selected':''}`} key={e.id} onClick={()=>chooseExercise(e)} aria-pressed={selected?.id===e.id}><Photo src={e.photos[0]} alt={`${e.nameKo} 동작 사진`} className="exercise-photo"/><div className="exercise-card-content"><span className="equipment-label">{e.equipmentKo}</span><h3>{e.nameKo}</h3><p>{e.primaryMusclesKo.join(' · ')}</p><span className="card-arrow">{selected?.id===e.id?<Check size={19}/>:<ArrowUpRight size={19}/>}</span></div></button>)}</div>:<div className="empty-state"><Search size={30} aria-hidden="true"/><h3>검색 결과가 없어요</h3><p>이름을 짧게 입력하거나 영어 이름으로 찾아보세요.</p><Button variant="outline" className="action-button" onClick={()=>updateQuery('')}>대표 운동 보기</Button></div>}
      {shown<results.items.length&&<Button variant="outline" className="load-more" onClick={()=>setShown(n=>n+12)}>운동 더 보기 <span>{Math.min(shown,results.items.length)} / {results.items.length}</span></Button>}
     </section>
-    <aside className="selection-panel"><div className="welcome-guide"><span className="guide-icon"><Dumbbell size={30} aria-hidden="true"/></span><h2>운동 방법부터<br/>차근차근 확인해요.</h2><ol><li><span>1</span>운동을 눌러 방법을 확인해요</li><li><span>2</span>‘선택’으로 기록 목록에 담아요</li><li><span>3</span>다음 화면에서 스트레칭을 골라요</li></ol><a className="nutrition-jump" href="#workout-log">선택한 운동 {drafts.length}개 보기 ↓</a></div></aside></div>
+    <aside className="selection-panel"><div className="welcome-guide"><span className="guide-icon"><Dumbbell size={30} aria-hidden="true"/></span><h2>운동 방법부터<br/>차근차근 확인해요.</h2><ol><li><span>1</span>운동을 눌러 방법을 확인해요</li><li><span>2</span>‘선택’으로 기록 목록에 담아요</li><li><span>3</span>다음 화면에서 스트레칭을 골라요</li></ol><Button variant="outline" onClick={()=>setStage('record')}>선택한 운동 {drafts.length}개 보기</Button></div></aside></div>
    </>}
    {stage==='method'&&selected&&<>
     <button className="back-button" onClick={toFind}><ArrowLeft size={18} aria-hidden="true"/>운동 목록으로</button>
@@ -94,8 +96,8 @@ export default function RecoveryApp() {
     <div className="follow-layout"><section aria-label="운동 동작 사진"><div className="photo-pair">{selected.photos.length?selected.photos.map((src,i)=><figure key={src}><Photo src={src} alt={selected.nameKo+' 동작 사진 '+(i+1)} onZoom={setZoom} className="follow-photo"/><figcaption>동작 사진 {i+1}</figcaption></figure>):<Photo alt="운동 동작 사진" className="follow-photo"/>}</div><div className="food-detail exercise-method-facts"><div className="fact-chips"><span>{selected.levelKo}</span><span>{selected.equipmentKo}</span></div><ExerciseFacts exercise={selected}/></div></section>
     <section className="instruction-panel" aria-label="운동 방법"><div className="section-heading"><h2>이렇게 운동하세요</h2></div><p className="small muted">{selected.instructionsKo?.length?'원문 기반 한국어 요약':'제공된 데이터의 영어 원문입니다.'}</p>
     {(selected.instructionsKo?.length?selected.instructionsKo:selected.instructions).length?<ol className="instruction-steps exercise-method-steps" lang={selected.instructionsKo?.length?'ko':'en'}>{(selected.instructionsKo?.length?selected.instructionsKo:selected.instructions).map((text,i)=><li key={i}><span className="instruction-number" aria-hidden="true">{i+1}</span><p>{text}</p></li>)}</ol>:<p className="inline-note">제공된 데이터에 운동 방법이 없어요.</p>}
-    <div className="method-actions"><Button className="action-button full" disabled={drafts.some(d=>d.exerciseId===selected.id)} onClick={addSelected}>{drafts.some(d=>d.exerciseId===selected.id)?'선택됨':'선택'}<Check aria-hidden="true"/></Button><p role="status" className="nutrition-note">{drafts.some(d=>d.exerciseId===selected.id)?'운동 기록 목록에 담았어요. 목록에서 횟수를 입력하고 저장하세요.':'선택하면 운동 기록 목록에 추가됩니다.'}</p><a className="nutrition-jump" href="#workout-log">선택한 운동 {drafts.length}개 보기 ↓</a>
-    {selected.category==='stretching'?<p className="inline-note">이 운동은 스트레칭이에요. 다른 운동을 고르면 관련 스트레칭을 볼 수 있어요.</p>:<Button variant="outline" className="action-button full" onClick={()=>setStage('recommend')}>다음 · 스트레칭 선택<ArrowRight aria-hidden="true"/></Button>}</div></section></div>
+    <div className="method-actions"><Button className="action-button full" onClick={addSelected}>선택 · 기록 입력<Check aria-hidden="true"/></Button><p role="status" className="nutrition-note">{drafts.some(d=>d.exerciseId===selected.id)?'선택한 운동이에요. 기록 입력을 이어갈 수 있어요.':'선택하면 날짜와 횟수를 입력하는 화면으로 이동해요.'}</p>
+    {selected.category==='stretching'?<p className="inline-note">이 운동은 스트레칭이에요. 다른 운동을 고르면 관련 스트레칭을 볼 수 있어요.</p>:<Button variant="outline" className="action-button full" onClick={()=>setStage('recommend')}>기록 없이 스트레칭 보기<ArrowRight aria-hidden="true"/></Button>}</div></section></div>
    </>}
    {stage==='recommend'&&selected&&<>
     <button className="back-button" onClick={()=>setStage('method')}><ArrowLeft size={18} aria-hidden="true"/>운동 방법으로</button><div className="intro"><p className="eyebrow">선택한 운동에 맞춰서</p><h1 ref={heading} tabIndex={-1}>사용한 근육을 천천히 늘려볼까요?</h1><p>사진을 보고 원하는 스트레칭을 선택하세요.</p></div>
@@ -104,16 +106,17 @@ export default function RecoveryApp() {
     <div className="section-heading recommendation-heading"><h2>나에게 맞는 스트레칭 <output aria-live="polite">{recommendations.items.length}</output></h2><label className="count-label">최대<NativeSelect aria-label="최대 추천 개수" value={limit} onChange={e=>{setLimit(Number(e.target.value));setActive(null);}}>{Array.from({length:10},(_,i)=><option value={i+1} key={i+1}>{i+1}개</option>)}</NativeSelect></label></div>
     {recommendations.items.length?<div className="stretch-list">{recommendations.items.map((candidate,i)=>{const row=exercises.find(e=>e.id===candidate.stretch.exerciseId);return <button className="stretch-card" key={candidate.stretch.exerciseId} onClick={()=>chooseStretch(candidate)}><div className="stretch-thumbnail"><Photo src={row?.photos[0]} alt={`${candidate.stretch.nameKo} 동작 사진`} className="stretch-photo"/><span className="recommend-number">{String(i+1).padStart(2,'0')}</span></div><div className="stretch-card-body"><p className="equipment-label">{candidate.stretch.requirementsKo.join(' · ')||'별도 도구 없이'}</p><h3>{candidate.stretch.nameKo}</h3><div className="muscle-tags">{candidate.matches.map(m=><span key={m.muscleId} className="muscle-tag primary">{m.nameKo}</span>)}</div><p className="match-explanation">선택한 운동에서 사용한 근육과 연결돼요.</p><span className="text-link">방법 보기<ArrowRight size={17} aria-hidden="true"/></span></div></button>;})}</div>:<div className="empty-state"><Info size={28}/><h3>조건에 맞는 후보가 없어요</h3><p>{recommendations.message}</p><Button variant="outline" className="action-button" onClick={toFind}>다른 운동 선택</Button></div>}
     {recommendations.uncovered.length>0&&<details className="plain-details uncovered"><summary>이번 추천에 포함되지 않은 근육 ({recommendations.uncovered.length})</summary><ul>{recommendations.uncovered.map(m=><li key={m.muscleId}><strong>{m.nameKo}</strong> · {m.reasonKo}</li>)}</ul></details>}
-    <p className="recommend-note"><Info size={16} aria-hidden="true"/>같은 근육만 반복하지 않도록 골랐어요. 조건에 따라 추천 개수가 적을 수 있어요.</p></section></div>
+    <Button className="action-button full" variant="outline" onClick={()=>setStage('history')}>스트레칭 건너뛰고 기록 보기</Button><p className="recommend-note"><Info size={16} aria-hidden="true"/>같은 근육만 반복하지 않도록 골랐어요. 조건에 따라 추천 개수가 적을 수 있어요.</p></section></div>
    </>}
    {stage==='detail'&&active&&selected&&<>
     <button className="back-button" onClick={()=>setStage('recommend')}><ArrowLeft size={18} aria-hidden="true"/>스트레칭 목록으로</button><div className="intro"><p className="eyebrow">운동 후 정적 스트레칭</p><h1 ref={heading} tabIndex={-1}>{active.stretch.nameKo}</h1><p>{selected.nameKo}에서 사용한 근육을 위한 동작이에요.</p></div>
     <div className="follow-layout"><section aria-label="스트레칭 동작 사진"><div className="photo-pair">{activeExercise?.photos.length?activeExercise.photos.map((src,i)=><figure key={src}><Photo src={src} alt={`${active.stretch.nameKo} 동작 사진 ${i+1}`} onZoom={setZoom} className="follow-photo"/><figcaption>동작 사진 {i+1}</figcaption></figure>):<Photo alt="스트레칭 동작 사진" className="follow-photo"/>}</div><div className="reason-panel"><span className="reason-icon"><Activity size={21} aria-hidden="true"/></span><div><h2>이 스트레칭을 추천한 이유</h2><p>선택한 운동에서 사용한 <strong>{active.matches.map(m=>m.nameKo).join(', ')}</strong> 부위와 연결되는 동작이에요.</p><details className="plain-details"><summary>근육 연결 기준 자세히 보기</summary><ul>{active.matches.map(m=><li key={m.muscleId}>{m.nameKo} · 운동의 {m.exerciseRoleKo} → 스트레칭의 {m.stretchRoleKo}</li>)}</ul><p className="small muted">근육 일치 점수 {active.score}점 · 추천 순서를 정하는 기준으로, 효과나 실제 부하를 뜻하지 않아요.</p></details></div></div></section>
-    <section className="instruction-panel" aria-label="스트레칭 방법"><div className="section-heading"><h2>이렇게 따라 해보세요</h2><span className="pill">천천히, 편안하게</span></div><p className="tools-line"><Dumbbell size={17} aria-hidden="true"/>{active.stretch.requirementsKo.join(' · ')||'별도 도구가 필요 없어요'}</p><ol className="instruction-steps">{active.stretch.instructionsKo.map((s,i)=><li key={i}><span className="instruction-number" aria-hidden="true">{i+1}</span><p>{s}</p></li>)}</ol><p className="source-caption">원문 기반 한국어 요약 · 유지 시간은 원문에 적힌 경우에만 안내해요.</p><div className="care-note"><Info size={20} aria-hidden="true"/><p>통증이 없는 범위에서 움직이고, 반동을 주지 마세요. 불편하면 멈추고 자세를 확인하세요.</p></div><Button className="action-button full" onClick={()=>setStage('recommend')}>다른 스트레칭도 보기<ArrowRight aria-hidden="true"/></Button><button className="text-button" onClick={toFind}>다른 운동 선택하기</button></section></div>
+    <section className="instruction-panel" aria-label="스트레칭 방법"><div className="section-heading"><h2>이렇게 따라 해보세요</h2><span className="pill">천천히, 편안하게</span></div><p className="tools-line"><Dumbbell size={17} aria-hidden="true"/>{active.stretch.requirementsKo.join(' · ')||'별도 도구가 필요 없어요'}</p><ol className="instruction-steps">{active.stretch.instructionsKo.map((s,i)=><li key={i}><span className="instruction-number" aria-hidden="true">{i+1}</span><p>{s}</p></li>)}</ol><p className="source-caption">원문 기반 한국어 요약 · 유지 시간은 원문에 적힌 경우에만 안내해요.</p><div className="care-note"><Info size={20} aria-hidden="true"/><p>통증이 없는 범위에서 움직이고, 반동을 주지 마세요. 불편하면 멈추고 자세를 확인하세요.</p></div><Button className="action-button full" onClick={()=>{setRecordRevision(n=>n+1);setStage('history');}}>완료 · 운동 기록 보기<ArrowRight aria-hidden="true"/></Button><button className="text-button" onClick={toFind}>다른 운동 선택하기</button></section></div>
    </>}
-   </>}
-   <WorkoutPanel drafts={drafts} setDrafts={setDrafts} onFind={toFind}/>
-   <NutritionPanel exercise={selected?.nameKo} stretch={active?.stretch.nameKo}/>
+   </>)}
+   <div hidden={stage!=='record'&&stage!=='history'}><WorkoutPanel drafts={drafts} setDrafts={setDrafts} onFind={toFind} view={stage==='record'?'entry':'history'} onEntry={()=>setStage('record')} revision={recordRevision} onSaved={draft=>{const exercise=exercises.find(e=>e.id===draft.exerciseId);setSelected(exercise||null);setActive(null);setRecordRevision(n=>n+1);setStage(exercise&&exercise.category!=='stretching'?'recommend':'history');}}/></div>
+   <div hidden={stage!=='nutrition'}><NutritionPanel onExercise={toFind}/></div>
+   <nav className="app-bottom-nav" aria-label="주요 메뉴"><button aria-current={!['history','nutrition'].includes(stage)?'page':undefined} onClick={toFind}>운동</button><button aria-current={stage==='history'?'page':undefined} onClick={()=>{setRecordRevision(n=>n+1);setStage('history');}}>운동 기록{drafts.length>0&&` (${drafts.length})`}</button><button aria-current={stage==='nutrition'?'page':undefined} onClick={()=>setStage('nutrition')}>식사</button></nav>
    <footer className="site-footer"><span className="footer-brand"><Activity size={16} aria-hidden="true"/>리커버리</span><p>운동 정보를 바탕으로 스트레칭 후보를 안내해요. 치료·회복 효과를 보장하지 않아요.</p><button onClick={()=>setHelp(true)}>데이터와 추천 기준</button></footer>
   </main>
   <Dialog open={!!zoom} onOpenChange={open=>{if(!open)setZoom(null);}}><DialogContent showCloseButton={false} className="image-dialog"><div className="dialog-top"><DialogTitle>동작 사진 크게 보기</DialogTitle><DialogClose aria-label="사진 닫기" className="dialog-close"><X size={22}/></DialogClose></div><DialogDescription>{zoom?.caption}</DialogDescription>{zoom&&<Image src={zoom.src} alt={zoom.caption} width={850} height={567} unoptimized className="enlarged-image"/>}</DialogContent></Dialog>
