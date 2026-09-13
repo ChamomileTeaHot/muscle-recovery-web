@@ -8,6 +8,8 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Dialog, DialogClose, DialogContent, DialogDescription, DialogTitle } from '@/components/ui/dialog';
 import { Skeleton } from '@/components/ui/skeleton';
+import NutritionPanel from './nutrition-panel';
+import WorkoutPanel from './workout-panel';
 import { recommend, searchExercises, type Candidate, type Exercise, type Stretch } from '@/lib/recovery';
 
 type Stage = 'find'|'recommend'|'detail';
@@ -77,6 +79,7 @@ export default function RecoveryApp() {
   <a className="skip-link" href="#main">본문으로 바로가기</a>
   <header className="app-header"><button className="brand" onClick={toFind} aria-label="리커버리 운동 찾기로 이동"><span className="brand-icon"><Activity aria-hidden="true"/></span>리커버리<span className="brand-en">RECOVERY</span></button><button className="help-button" onClick={()=>setHelp(true)}><CircleHelp size={19} aria-hidden="true"/><span>이용 안내</span></button></header>
   <main id="main" className="app-shell">
+   <div className="record-links"><a className="nutrition-jump" href="#workout-log">운동 기록 ↓</a><a className="nutrition-jump" href="#nutrition">식사 기록 · 영양 요약 ↓</a></div>
    <nav aria-label="진행 단계"><ol className="stepper">{stages.map(([key,label],i)=><li key={key} className={stage===key?'active':''} aria-current={stage===key?'step':undefined}><span className="step-number">{String(i+1).padStart(2,'0')}</span><span>{label}</span>{i<2&&<ChevronRight className="step-chevron" size={15} aria-hidden="true"/>}</li>)}</ol></nav>
    {loading?<section aria-busy="true" aria-label="운동 데이터 불러오는 중"><div className="intro"><h1>운동 정보를 준비하고 있어요</h1></div><div className="exercise-grid">{[0,1,2,3].map(i=><Skeleton key={i} className="h-64 rounded-2xl"/>)}</div></section>:error?<section role="alert" className="empty-state"><Info size={30}/><h1>운동 정보를 불러오지 못했어요</h1><p>인터넷 연결을 확인하고 다시 시도해 주세요.</p><Button className="action-button" onClick={()=>{setLoading(true);setError(false);setRetry(r=>r+1);}}>다시 불러오기</Button></section>:<>
    {stage==='find'&&<>
@@ -109,6 +112,8 @@ export default function RecoveryApp() {
     <section className="instruction-panel" aria-label="스트레칭 방법"><div className="section-heading"><h2>이렇게 따라 해보세요</h2><span className="pill">천천히, 편안하게</span></div><p className="tools-line"><Dumbbell size={17} aria-hidden="true"/>{active.stretch.requirementsKo.join(' · ')||'별도 도구가 필요 없어요'}</p><ol className="instruction-steps">{active.stretch.instructionsKo.map((s,i)=><li key={i}><span className="instruction-number" aria-hidden="true">{i+1}</span><p>{s}</p></li>)}</ol><p className="source-caption">원문 기반 한국어 요약 · 유지 시간은 원문에 적힌 경우에만 안내해요.</p><div className="care-note"><Info size={20} aria-hidden="true"/><p>통증이 없는 범위에서 움직이고, 반동을 주지 마세요. 불편하면 멈추고 자세를 확인하세요.</p></div><Button className="action-button full" onClick={()=>setStage('recommend')}>다른 스트레칭도 보기<ArrowRight aria-hidden="true"/></Button><button className="text-button" onClick={toFind}>다른 운동 선택하기</button></section></div>
    </>}
    </>}
+   <WorkoutPanel selected={selected?.nameKo}/>
+   <NutritionPanel exercise={selected?.nameKo} stretch={active?.stretch.nameKo}/>
    <footer className="site-footer"><span className="footer-brand"><Activity size={16} aria-hidden="true"/>리커버리</span><p>운동 정보를 바탕으로 스트레칭 후보를 안내해요. 치료·회복 효과를 보장하지 않아요.</p><button onClick={()=>setHelp(true)}>데이터와 추천 기준</button></footer>
   </main>
   <Dialog open={!!zoom} onOpenChange={open=>{if(!open)setZoom(null);}}><DialogContent showCloseButton={false} className="image-dialog"><div className="dialog-top"><DialogTitle>동작 사진 크게 보기</DialogTitle><DialogClose aria-label="사진 닫기" className="dialog-close"><X size={22}/></DialogClose></div><DialogDescription>{zoom?.caption}</DialogDescription>{zoom&&<Image src={zoom.src} alt={zoom.caption} width={850} height={567} unoptimized className="enlarged-image"/>}</DialogContent></Dialog>

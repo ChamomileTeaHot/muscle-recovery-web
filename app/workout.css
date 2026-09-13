@@ -1,0 +1,9 @@
+.record-links{display:flex;flex-wrap:wrap;gap:12px 28px}
+.workout-fields{display:grid;grid-template-columns:2fr 1fr;gap:18px}
+.workout-check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:16px;margin:12px 0}
+.workout-form fieldset{min-width:0}
+.workout-form button{white-space:normal;height:auto;min-height:44px}
+.workout-row{flex-wrap:wrap}
+.workout-row>div:first-child{flex:1;min-width:150px}
+.workout-section{margin-bottom:30px}
+@media(max-width:650px){.workout-fields{grid-template-columns:1fr;gap:0}.workout-row .workout-check{flex-basis:100%;order:3;margin:0}.workout-form{padding:18px}}
