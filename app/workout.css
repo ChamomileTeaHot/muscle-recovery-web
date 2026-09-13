@@ -1,4 +1,7 @@
 .record-links{display:flex;flex-wrap:wrap;gap:12px 28px}
+.exercise-method-facts{margin-top:20px}.exercise-method-steps{margin-top:20px}.method-actions{margin-top:28px;padding-top:22px;border-top:1px solid var(--border)}
+.draft-list{display:grid;gap:14px;list-style:none;padding:0}.draft-list h4{font-size:20px;font-weight:750;margin-bottom:16px}.draft-controls{display:flex;align-items:center;flex-wrap:wrap;gap:16px}.draft-controls .nutrition-field{width:170px;margin:0}.draft-controls .workout-check{flex:1;min-width:190px}.draft-controls input{width:100%}
+@media(max-width:650px){.stepper{flex-wrap:wrap!important;justify-content:flex-start!important;gap:4px!important}.stepper li{font-size:14px!important}.draft-controls .nutrition-field{width:100%}}
 .workout-fields{display:grid;grid-template-columns:2fr 1fr;gap:18px}
 .workout-check{display:flex;align-items:center;gap:10px;min-height:44px;font-size:16px;margin:12px 0}
 .workout-form fieldset{min-width:0}
