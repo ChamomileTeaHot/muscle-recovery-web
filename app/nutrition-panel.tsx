@@ -1,5 +1,6 @@
 'use client';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import BodyTrendPanel from './body-trend-panel';
 import { Button } from '@/components/ui/button';
 import { NativeSelect } from '@/components/ui/native-select';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
@@ -31,7 +32,7 @@ export default function NutritionPanel({onExercise}:{onExercise:()=>void}){
   <p className="nutrition-note">식사 기록은 이 화면을 열어 둔 동안 유지됩니다. 새로고침하면 사라져요. 운동한 내용은 하단의 운동 기록에서 확인할 수 있어요.</p>
   <label className="nutrition-date">식사 날짜<input type="date" value={date} onChange={e=>{setDate(e.target.value);setMessage('');}} required/></label>
   <Tabs value={tab} onValueChange={setTab}>
-   <TabsList className="nutrition-tabs" aria-label="식사 기록과 요약"><TabsTrigger value="record">식사 기록</TabsTrigger><TabsTrigger value="summary">영양 요약</TabsTrigger></TabsList>
+   <TabsList className="nutrition-tabs" aria-label="식사 기록과 요약"><TabsTrigger value="record">식사 기록</TabsTrigger><TabsTrigger value="summary">영양 요약</TabsTrigger><TabsTrigger value="body">음식·운동 변화</TabsTrigger></TabsList>
    <TabsContent value="record"><p className="food-step-indicator" ref={stepHeading} tabIndex={-1}>{foodStep==='search'?'1 / 2 · 음식 선택':'2 / 2 · 먹은 양 입력'}</p>
     {status==='loading'?<p role="status">음식 정보를 불러오는 중이에요.</p>:status==='error'?<div role="alert"><p>음식 정보를 불러오지 못했어요.</p><Button onClick={()=>setRetry(n=>n+1)}>다시 불러오기</Button></div>:<div className="nutrition-layout food-wizard">
      <div hidden={foodStep!=='search'}><label className="nutrition-field">음식 이름<input type="search" value={query} placeholder="예: 비빔밥, 김치찌개" onChange={e=>{setQuery(e.target.value);setShown(12);}}/></label>
@@ -58,8 +59,9 @@ export default function NutritionPanel({onExercise}:{onExercise:()=>void}){
     <div className="nutrition-summary">{nutrients.map(k=><div key={k}><span>{labels[k]}</span><strong>{format(sum[k].value)}<small>{k==='kcal'?' kcal':' g'}</small></strong><p>{sum[k].missing?`${sum[k].missing}개 음식 정보 누락 · 확인된 값만 합산`:'기록한 음식 기준'}</p></div>)}</div>
     <h3 className="nutrition-subtitle">탄수화물·단백질·지방의 열량 비율</h3>
     {ratio?<><div className="macro-bar" aria-hidden="true">{ratio.map((p,i)=><span key={i} style={{width:`${p}%`}}/>)}</div><ul className="macro-legend">{ratio.map((p,i)=><li key={i}>{['탄수화물','단백질','지방'][i]} {p.toFixed(1)}%</li>)}</ul><p className="nutrition-note">탄수화물·단백질 1g당 4kcal, 지방 1g당 9kcal로 계산한 구성비입니다. 원본의 총열량과 차이가 날 수 있어요.</p></>:<p className="nutrition-notice">{daily.length?'탄수화물·지방 등의 정보가 없거나 합계가 0이라 비율을 계산할 수 없어요.':'음식을 기록하면 영양 요약을 볼 수 있어요.'}</p>}
-    <p className="nutrition-note">회복률이나 운동 소모 열량을 추정하지 않습니다. 영양성분이 없는 항목은 0으로 판단하지 않고 누락 여부를 표시해요.</p>
+    <p className="nutrition-note">영양 합계는 기록된 음식 기준입니다. 영양성분이 없는 항목은 0으로 판단하지 않고 누락 여부를 표시해요.</p>
    </TabsContent>
+   <TabsContent value="body" keepMounted><BodyTrendPanel entries={entries} date={date}/></TabsContent>
   </Tabs>
   <details className="plain-details"><summary>식품 데이터와 계산 기준</summary><p>자료: 사용자가 제공한 전국통합식품영양성분정보 음식 표준데이터. 소스·양념·원액과 업체 상품명이 없는 구성별 세부 항목을 제외해, 일반 음식과 업체 메뉴를 제공합니다. 영양값은 각 원본 항목을 유지하며 평균 내지 않습니다. 100g 또는 100ml당 값을 실제 섭취량에 비례해 계산하며, 식품중량을 1인분으로 가정하지 않습니다. 이름이 같은 음식도 원본 항목별로 구분합니다.</p></details>
  </section>;

@@ -19,7 +19,7 @@ export default function WorkoutPanel({drafts,setDrafts,onFind,view,onEntry,onSav
  },[date,retry,revision]);
  async function mutate(method:string,body:unknown) {
   setBusy(true);setError('');setMessage('');
-  try {const r=await fetch('/api/workouts',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data:any=await r.json();if(!r.ok)throw Error(data.error);return true;}
+  try {const r=await fetch('/api/workouts',{method,headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});const data:any=await r.json();if(!r.ok)throw Error(data.error);window.dispatchEvent(new Event('workouts-updated'));return true;}
   catch(e){setError(e instanceof Error?e.message:'저장하지 못했어요. 다시 시도해 주세요.');return false;}
   finally{setBusy(false);}
  }
