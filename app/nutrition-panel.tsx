@@ -17,8 +17,10 @@ export default function NutritionPanel({onExercise}:{onExercise:()=>void}){
  const [foods,setFoods]=useState<Food[]>([]),[status,setStatus]=useState('loading'),[retry,setRetry]=useState(0);
  const [query,setQuery]=useState(''),[origin,setOrigin]=useState(''),[shown,setShown]=useState(12);
  const [selected,setSelected]=useState<Food|null>(null),[amount,setAmount]=useState('100'),[meal,setMeal]=useState<Meal>('점심');
- const [date,setDate]=useState(''),[entries,setEntries]=useState<Entry[]>([]),[message,setMessage]=useState('');
+ const [date,setDate]=useState(''),[entries,setEntries]=useState<Entry[]>([]),[message,setMessage]=useState(''),[entriesLoaded,setEntriesLoaded]=useState(false);
  useEffect(()=>setDate(localDate()),[]);
+ useEffect(()=>{try{const stored=window.localStorage.getItem('recovery-food-entries-v1');if(stored){const parsed=JSON.parse(stored);if(Array.isArray(parsed))setEntries(parsed as Entry[]);}}catch{window.localStorage.removeItem('recovery-food-entries-v1');}finally{setEntriesLoaded(true);}},[]);
+ useEffect(()=>{if(entriesLoaded)window.localStorage.setItem('recovery-food-entries-v1',JSON.stringify(entries));},[entries,entriesLoaded]);
  useEffect(()=>{const c=new AbortController();setStatus('loading');fetch('/data/foods.json',{signal:c.signal}).then(r=>{if(!r.ok)throw Error();return r.json();}).then(data=>{if(!Array.isArray(data)||!data.length)throw Error();setFoods(data.map((f:Food)=>({...f,origin:f.company?'업체 메뉴':f.origin.split('(')[0]})));setStatus('ready');}).catch(e=>{if(e.name!=='AbortError')setStatus('error');});return()=>c.abort();},[retry]);
  const origins=useMemo(()=>[...new Set(foods.map(f=>f.origin))].sort(),[foods]);
  const results=useMemo(()=>searchFoods(foods,query,origin),[foods,query,origin]);
@@ -29,7 +31,7 @@ export default function NutritionPanel({onExercise}:{onExercise:()=>void}){
  return <section id="nutrition" className="nutrition-section" aria-labelledby="nutrition-title">
   <div className="intro"><p className="eyebrow">운동과 식사를 함께 확인해요</p><h2 id="nutrition-title" tabIndex={-1}>오늘 먹은 음식 기록</h2><p>음식을 고르고 실제 먹은 양을 입력하세요.</p></div>
 
-  <p className="nutrition-note">식사 기록은 이 화면을 열어 둔 동안 유지됩니다. 새로고침하면 사라져요. 운동한 내용은 하단의 운동 기록에서 확인할 수 있어요.</p>
+  <p className="nutrition-note">식사 기록은 이 기기에 저장됩니다. 날짜를 바꾸면 해당 날짜의 기록과 그래프를 볼 수 있어요. 운동한 내용은 하단의 운동 기록에서 확인할 수 있어요.</p>
   <label className="nutrition-date">식사 날짜<input type="date" value={date} onChange={e=>{setDate(e.target.value);setMessage('');}} required/></label>
   <Tabs value={tab} onValueChange={setTab}>
    <TabsList className="nutrition-tabs" aria-label="식사 기록과 요약"><TabsTrigger value="record">식사 기록</TabsTrigger><TabsTrigger value="summary">영양 요약</TabsTrigger><TabsTrigger value="body">음식·운동 변화</TabsTrigger></TabsList>
