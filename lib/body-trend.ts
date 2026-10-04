@@ -37,7 +37,10 @@ export function exerciseEnergy(weight:number,minutes:number,met:number){
 }
 export function scenario(weight:number,intake:number,baseline:number,exercise:number,days:number){
  if(![weight,intake,baseline,exercise,days].every(Number.isFinite)||weight<20||weight>350||intake<1000||baseline<800||baseline>6000||exercise<0||!Number.isInteger(days)||days<1||days>28)throw Error('시뮬레이션 입력 범위가 맞지 않습니다.');
- const balance=intake-baseline-exercise;
- if(Math.abs(balance)>1000)throw Error('하루 열량 차이가 1,000kcal를 넘어 이 단순 모델로 체중을 표시하지 않습니다. 기록과 소비 열량을 확인하세요.');
- return Array.from({length:days+1},(_,day)=>({day,weight:weight+balance*day/7700,withoutExercise:weight+(intake-baseline)*day/7700}));
+ const rawBalance=intake-baseline-exercise;
+ // Keep an extreme one-day log from drawing an unrealistic short-term slope.
+ // The actual difference remains available to the UI, while the display model is capped.
+ const balance=Math.max(-1000,Math.min(1000,rawBalance));
+ const withoutExerciseBalance=Math.max(-1000,Math.min(1000,intake-baseline));
+ return Array.from({length:days+1},(_,day)=>({day,weight:weight+balance*day/7700,withoutExercise:weight+withoutExerciseBalance*day/7700}));
 }
