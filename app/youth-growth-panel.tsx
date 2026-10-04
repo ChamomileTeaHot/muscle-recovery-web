@@ -6,6 +6,7 @@ import { NativeSelect } from '@/components/ui/native-select';
 import { Button } from '@/components/ui/button';
 import { totals, type Entry } from '@/lib/nutrition';
 import { type Workout } from '@/lib/workouts';
+import { loadWorkouts } from '@/lib/workout-storage';
 import { youthGrowthScenario, type GrowthSex } from '@/lib/youth-growth';
 
 const fmt = (n: number) => n.toLocaleString('ko-KR', { maximumFractionDigits: 1 });
@@ -25,9 +26,8 @@ export default function YouthGrowthPanel({ entries, date }: { entries: Entry[]; 
     if (!date) return;
     const controller = new AbortController();
     setWorkouts([]); setStatus('loading');
-    fetch(`/api/workouts?date=${encodeURIComponent(date)}`, { signal: controller.signal })
-      .then(async r => { if (!r.ok) throw Error(); return r.json(); })
-      .then(rows => { if (!Array.isArray(rows)) throw Error(); setWorkouts(rows); setStatus('ready'); })
+    loadWorkouts(date, controller.signal)
+      .then(result => { setWorkouts(result.rows); setStatus('ready'); })
       .catch(e => { if (e.name !== 'AbortError') setStatus('error'); });
     return () => controller.abort();
   }, [date, retry]);
