@@ -9,10 +9,15 @@ import { totals, type Entry } from '@/lib/nutrition';
 import { type Workout } from '@/lib/workouts';
 import { activityTypes, dailyActivityLevels, exerciseEnergy, scenario, tdee, obesityProjection, type BiologicalSex } from '@/lib/body-trend';
 import './body-trend.css';
+import YouthGrowthPanel from './youth-growth-panel';
 
 const fmt=(n:number)=>n.toLocaleString('ko-KR',{maximumFractionDigits:1});
 const config={kcal:{label:'열량',color:'#315cdb'},weight:{label:'음식 + 운동',color:'#315cdb'},withoutExercise:{label:'운동을 제외한 비교',color:'#778399'}};
 export default function BodyTrendPanel({entries,date}:{entries:Entry[];date:string}){
+ const [mode,setMode]=useState('youth');
+ return <><label className="growth-mode">변화 그래프 기준<NativeSelect value={mode} onChange={e=>setMode(e.target.value)}><option value="youth">어린이·청소년 · 성장 참고선</option><option value="adult">성인 · 열량 시뮬레이션</option></NativeSelect></label>{mode==='youth'?<YouthGrowthPanel entries={entries} date={date}/>:<AdultBodyTrendPanel entries={entries} date={date}/>}</>;
+}
+function AdultBodyTrendPanel({entries,date}:{entries:Entry[];date:string}){
  const [workouts,setWorkouts]=useState<Workout[]>([]),[status,setStatus]=useState('loading'),[retry,setRetry]=useState(0);
  const [details,setDetails]=useState<Record<string,{minutes:string;kind:string}>>({});
  const [weight,setWeight]=useState(''),[height,setHeight]=useState(''),[age,setAge]=useState(''),[sex,setSex]=useState<BiologicalSex>('male'),[activity,setActivity]=useState(''),[days,setDays]=useState(14);

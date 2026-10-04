@@ -13,6 +13,10 @@ test('comparison uses same intake and baseline, exercise alone changes the secon
  assert.ok(Math.abs(rows[14].weight-(70-150*14/7700))<1e-9);
  assert.equal(scenario(70,2200,2200,0,7)[7].weight,70);
 });
-test('rejects low intake, extreme gaps, nonfinite inputs and long-term extrapolation',()=>{
- for(const args of [[70,900,2000,0,14],[70,1500,3000,0,14],[70,2000,2000,0,365],[NaN,2000,2000,0,14]])assert.throws(()=>scenario(...args));
+test('rejects low intake, nonfinite inputs and long-term extrapolation',()=>{
+ for(const args of [[70,900,2000,0,14],[70,2000,2000,0,365],[NaN,2000,2000,0,14]])assert.throws(()=>scenario(...args));
+});
+test('existing adult model caps both comparison lines at a daily 1000 kcal difference',()=>{
+ assert.ok(Math.abs(scenario(70,1500,3000,0,14).at(-1).weight-(70-1000*14/7700))<1e-9);
+ assert.ok(Math.abs(scenario(70,5000,2000,0,14).at(-1).withoutExercise-(70+1000*14/7700))<1e-9);
 });
