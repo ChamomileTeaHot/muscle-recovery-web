@@ -2,6 +2,8 @@
 
 운동 후 스트레칭을 찾고, 식사·운동 기록을 함께 살펴보는 웹앱입니다. [앱 열기](https://muscle-recovery-guide.f79c69e9-1f74-440a-9ff2-cd1bead424d3.chatgpt.site/)
 
+[GitHub Pages 주소](https://chamomileteahot.github.io/muscle-recovery-web/)는 정적 안내 페이지에서 운영 중인 앱으로 이동합니다. 이 프로젝트의 운동 기록 API와 로그인 기능은 GitHub Pages에서 실행되지 않으므로 앱은 위 주소에서 제공됩니다.
+
 ## 주요 기능
 
 - 운동 876개를 한국어·영어로 검색하고 사진과 사용 근육을 확인합니다.
